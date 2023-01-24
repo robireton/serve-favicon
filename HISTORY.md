@@ -1,3 +1,10 @@
+3.0.0 / 2023-01-24
+==================
+
+  * rewrite as ESM
+  * `maxAge` option only accepts integer milliseconds
+  * remove dependencies on `ms`, `parseurl`, `safe-buffer`
+
 2.5.0 / 2018-03-29
 ==================
 

@@ -1,55 +1,24 @@
-/*!
- * serve-favicon
- * Copyright(c) 2010 Sencha Inc.
- * Copyright(c) 2011 TJ Holowaychuk
- * Copyright(c) 2014-2017 Douglas Christopher Wilson
- * MIT Licensed
- */
-
-'use strict'
-
-/**
- * Module dependencies.
- * @private
- */
-
-var Buffer = require('safe-buffer').Buffer
-var etag = require('etag')
-var fresh = require('fresh')
-var fs = require('fs')
-var ms = require('ms')
-var parseUrl = require('parseurl')
-var path = require('path')
-var resolve = path.resolve
-
-/**
- * Module exports.
- * @public
- */
-
-module.exports = favicon
-
-/**
- * Module variables.
- * @private
- */
-
-var ONE_YEAR_MS = 60 * 60 * 24 * 365 * 1000 // 1 year
+import { readFile } from 'node:fs/promises'
+import { statSync } from 'node:fs'
+import { resolve } from 'node:path'
+import etag from 'etag'
+import fresh from 'fresh'
 
 /**
  * Serves the favicon located by the given `path`.
- *
- * @public
- * @param {String|Buffer} path
- * @param {Object} [options]
- * @return {Function} middleware
- */
+*
+* @public
+* @param {String|Buffer} path
+* @param {Object} [options]
+* @return {Function} middleware
+*/
 
-function favicon (path, options) {
-  var opts = options || {}
+export default function favicon (path, options) {
+  const ONE_YEAR_MS = 60 * 60 * 24 * 365 * 1000 // 1 year
+  const opts = options || {}
 
-  var icon // favicon cache
-  var maxAge = calcMaxAge(opts.maxAge)
+  let icon // favicon cache
+  const maxAge = Number.isInteger(opts.maxAge) ? Math.min(Math.max(0, opts.maxAge), ONE_YEAR_MS) : ONE_YEAR_MS
 
   if (!path) {
     throw new TypeError('path to favicon.ico is required')
@@ -63,7 +32,7 @@ function favicon (path, options) {
     throw new TypeError('path to favicon.ico must be string or buffer')
   }
 
-  return function favicon (req, res, next) {
+  return async function favicon (req, res, next) {
     if (getPathname(req) !== '/favicon.ico') {
       next()
       return
@@ -82,30 +51,14 @@ function favicon (path, options) {
       return
     }
 
-    fs.readFile(path, function (err, buf) {
-      if (err) return next(err)
+    try {
+      const buf = await readFile(path)
       icon = createIcon(buf, maxAge)
       send(req, res, icon)
-    })
+    } catch (err) {
+      return next(err)
+    }
   }
-}
-
-/**
- * Calculate the max-age from a configured value.
- *
- * @private
- * @param {string|number} val
- * @return {number}
- */
-
-function calcMaxAge (val) {
-  var num = typeof val === 'string'
-    ? ms(val)
-    : val
-
-  return num != null
-    ? Math.min(Math.max(0, num), ONE_YEAR_MS)
-    : ONE_YEAR_MS
 }
 
 /**
@@ -121,8 +74,8 @@ function createIcon (buf, maxAge) {
   return {
     body: buf,
     headers: {
-      'Cache-Control': 'public, max-age=' + Math.floor(maxAge / 1000),
-      'ETag': etag(buf)
+      'Cache-Control': `public, max-age=${Math.floor(maxAge / 1000)}`,
+      ETag: etag(buf)
     }
   }
 }
@@ -136,7 +89,7 @@ function createIcon (buf, maxAge) {
  */
 
 function createIsDirError (path) {
-  var error = new Error('EISDIR, illegal operation on directory \'' + path + '\'')
+  const error = new Error(`EISDIR, illegal operation on directory '${path}'`)
   error.code = 'EISDIR'
   error.errno = 28
   error.path = path
@@ -153,7 +106,7 @@ function createIsDirError (path) {
 
 function getPathname (req) {
   try {
-    return parseUrl(req).pathname
+    return req.path
   } catch (e) {
     return undefined
   }
@@ -170,7 +123,7 @@ function getPathname (req) {
 
 function isFresh (req, res) {
   return fresh(req.headers, {
-    'etag': res.getHeader('ETag'),
+    etag: res.getHeader('ETag'),
     'last-modified': res.getHeader('Last-Modified')
   })
 }
@@ -183,10 +136,10 @@ function isFresh (req, res) {
  */
 
 function resolveSync (iconPath) {
-  var path = resolve(iconPath)
-  var stat = fs.statSync(path)
+  const path = resolve(iconPath)
+  const stats = statSync(path)
 
-  if (stat.isDirectory()) {
+  if (stats.isDirectory()) {
     throw createIsDirError(path)
   }
 
@@ -204,10 +157,10 @@ function resolveSync (iconPath) {
 
 function send (req, res, icon) {
   // Set headers
-  var headers = icon.headers
-  var keys = Object.keys(headers)
-  for (var i = 0; i < keys.length; i++) {
-    var key = keys[i]
+  const headers = icon.headers
+  const keys = Object.keys(headers)
+  for (let i = 0; i < keys.length; i++) {
+    const key = keys[i]
     res.setHeader(key, headers[key])
   }
 
