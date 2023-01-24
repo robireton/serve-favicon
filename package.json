@@ -1,6 +1,6 @@
 {
   "type": "module",
-  "name": "serve-favicon",
+  "name": "@robireton/serve-favicon",
   "description": "favicon serving middleware with caching",
   "version": "3.0.0",
   "author": "Rob Ireton <rob@ireton.org>",

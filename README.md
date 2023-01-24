@@ -1,6 +1,10 @@
 # serve-favicon
 
-Node.js middleware for serving a favicon.
+*Node.js middleware for serving a favicon*
+
+this scoped version forked from [expressjs/serve-favicon](https://github.com/expressjs/serve-favicon) to:
+  - rewrite as an ECMAScript Module
+  - remove dependencies
 
 A favicon is a visual cue that client software, like browsers, use to identify
 a site. For an example and more information, please visit
