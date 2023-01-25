@@ -1,8 +1,8 @@
 import { readFile } from 'node:fs/promises'
 import { statSync } from 'node:fs'
 import { resolve } from 'node:path'
-import etag from 'etag'
-import fresh from 'fresh'
+import etag from '@robireton/etag'
+import fresh from '@robireton/fresh'
 
 /**
  * Serves the favicon located by the given `path`.

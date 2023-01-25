@@ -23,5 +23,8 @@
   "dependencies": {
     "@robireton/etag": "^2.0.0",
     "@robireton/fresh": "^1.0.0"
+  },
+  "scripts": {
+    "test": "node test/test.js"
   }
 }
