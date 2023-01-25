@@ -32,7 +32,7 @@ This is an ECMAScript Module available through the
 [npm registry](https://www.npmjs.com/). Installation is done using the
 [`npm install` command](https://docs.npmjs.com/getting-started/installing-npm-packages-locally):
 
-```sh
+```shell
 $ npm install @robireton/serve-favicon
 ```
 
@@ -62,7 +62,7 @@ to avoid processing any other middleware if we already know the request is for
 ```javascript
 import { resolve } from 'node:path'
 import express from 'express'
-import favicon from 'serve-favicon'
+import favicon from '@robireton/serve-favicon'
 
 const app = express()
 app.use(favicon(resolve('static/favicon.ico')))

@@ -2,7 +2,7 @@
   "type": "module",
   "name": "@robireton/serve-favicon",
   "description": "favicon serving middleware with caching",
-  "version": "3.0.0",
+  "version": "3.0.1",
   "author": "Rob Ireton <rob@ireton.org>",
   "main": "index.js",
   "license": "MIT",
@@ -21,7 +21,7 @@
     "index.js"
   ],
   "dependencies": {
-    "etag": "^1.8.1",
-    "fresh": "^0.5.2"
+    "@robireton/etag": "^2.0.0",
+    "@robireton/fresh": "^1.0.0"
   }
 }
