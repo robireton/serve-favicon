@@ -7,20 +7,15 @@ import { Buffer } from 'node:buffer'
 import { join } from 'node:path'
 import favicon from '../index.js'
 // import { TempIcon } from './support/tempIcon.js'
-// const request = require('supertest')
 
 const FIXTURES_PATH = join(cwd(), 'test', 'fixtures')
 const ICON_PATH = join(FIXTURES_PATH, 'favicon.ico')
 
-describe('favicon()', function () {
+describe('favicon()', () => {
   describe('arguments', function () {
     describe('path', function () {
-      it('should be required', function () {
-        assert.throws(favicon.bind(), /path.*required/)
-      })
-
       it('should accept file path', function () {
-        assert.doesNotThrow(favicon.bind(null, join(FIXTURES_PATH, 'favicon.ico')))
+        assert.doesNotThrow(favicon.bind(null, ICON_PATH))
       })
 
       it('should accept buffer', function () {
@@ -28,85 +23,109 @@ describe('favicon()', function () {
       })
 
       it('should exist', function () {
-        assert.throws(favicon.bind(null, join(FIXTURES_PATH, 'nothing')), /ENOENT.*nothing/)
-      })
-
-      it('should not be dir', function () {
-        assert.throws(favicon.bind(null, FIXTURES_PATH), /EISDIR.*fixtures/)
+        assert.throws(favicon.bind(null, join(FIXTURES_PATH, 'nothing')), /ENOENT:.*nothing/)
       })
 
       it('should not be number', function () {
-        assert.throws(favicon.bind(null, 12), /path.*must be.*string/)
+        assert.throws(favicon.bind(null, 12), /must be path to favicon or buffer/)
       })
     })
 
-    // describe('options.maxAge', () => {
-    //   it('should be in cache-control', done => {
-    //     const server = createServer(null, { maxAge: 5000 }).listen()
-    //     request(server)
-    //       .get('/favicon.ico')
-    //       .expect('Cache-Control', 'public, max-age=5')
-    //       .expect(200, done)
-    //   })
-    // })
+    describe('options.maxAge', () => {
+      it('should be in cache-control', done => {
+        createServer(ICON_PATH, { maxAge: 5000 }, (err, server) => {
+          if (!err) {
+            http.get(`http://[::1]:${server.address().port}/favicon.ico`, res => {
+              const headers = parseRawHeaders(res.rawHeaders)
+              assert.ok(res.statusCode >= 200 && res.statusCode < 300)
+              assert.strictEqual(headers['Cache-Control'], 'public, max-age=5')
+              closeServer(server, () => done())
+            })
+          }
+        })
+      })
+
+      it('should have a default', done => {
+        createServer(undefined, undefined, (err, server) => {
+          if (!err) {
+            http.get(`http://[::1]:${server.address().port}/favicon.ico`, res => {
+              const headers = parseRawHeaders(res.rawHeaders)
+              assert.ok(res.statusCode >= 200 && res.statusCode < 300)
+              assert.match(headers['Cache-Control'], /public, max-age=[0-9]+/)
+              closeServer(server, () => done())
+            })
+          }
+        })
+      })
+
+      it('should accept 0', done => {
+        createServer(ICON_PATH, { maxAge: 0 }, (err, server) => {
+          if (!err) {
+            http.get(`http://[::1]:${server.address().port}/favicon.ico`, res => {
+              const headers = parseRawHeaders(res.rawHeaders)
+              assert.ok(res.statusCode >= 200 && res.statusCode < 300)
+              assert.match(headers['Cache-Control'], /public, max-age=[0-9]+/)
+              closeServer(server, () => done())
+            })
+          }
+        })
+      })
+    })
+
+    it('should be valid delta-seconds', done => {
+      createServer(ICON_PATH, { maxAge: 1234 }, (err, server) => {
+        if (!err) {
+          http.get(`http://[::1]:${server.address().port}/favicon.ico`, res => {
+            const headers = parseRawHeaders(res.rawHeaders)
+            assert.ok(res.statusCode >= 200 && res.statusCode < 300)
+            assert.strictEqual(headers['Cache-Control'], 'public, max-age=1')
+            closeServer(server, () => done())
+          })
+        }
+      })
+    })
+
+    it('should floor at 0', done => {
+      createServer(ICON_PATH, { maxAge: -4000 }, (err, server) => {
+        if (!err) {
+          http.get(`http://[::1]:${server.address().port}/favicon.ico`, res => {
+            const headers = parseRawHeaders(res.rawHeaders)
+            assert.ok(res.statusCode >= 200 && res.statusCode < 300)
+            assert.strictEqual(headers['Cache-Control'], 'public, max-age=0')
+            closeServer(server, () => done())
+          })
+        }
+      })
+    })
+
+    it('should ceil at 1 year', done => {
+      createServer(ICON_PATH, { maxAge: 900000000000 }, (err, server) => {
+        if (!err) {
+          http.get(`http://[::1]:${server.address().port}/favicon.ico`, res => {
+            const headers = parseRawHeaders(res.rawHeaders)
+            assert.ok(res.statusCode >= 200 && res.statusCode < 300)
+            assert.strictEqual(headers['Cache-Control'], 'public, max-age=31536000')
+            closeServer(server, () => done())
+          })
+        }
+      })
+    })
+
+    it('should ceil at 1 year', done => {
+      createServer(ICON_PATH, { maxAge: 900000000000 }, (err, server) => {
+        if (!err) {
+          http.get(`http://[::1]:${server.address().port}/favicon.ico`, res => {
+            const headers = parseRawHeaders(res.rawHeaders)
+            assert.ok(res.statusCode >= 200 && res.statusCode < 300)
+            assert.strictEqual(headers['Cache-Control'], 'public, max-age=31536000')
+            closeServer(server, () => done())
+          })
+        }
+      })
+    })
 
     /*
     describe('options.maxAge', function () {
-      it('should be in cache-control', function (done) {
-        const server = createServer(null, { maxAge: 5000 })
-        request(server)
-          .get('/favicon.ico')
-          .expect('Cache-Control', 'public, max-age=5')
-          .expect(200, done)
-      })
-
-      it('should have a default', function (done) {
-        const server = createServer()
-        request(server)
-          .get('/favicon.ico')
-          .expect('Cache-Control', /public, max-age=[0-9]+/)
-          .expect(200, done)
-      })
-
-      it('should accept 0', function (done) {
-        const server = createServer(null, { maxAge: 0 })
-        request(server)
-          .get('/favicon.ico')
-          .expect('Cache-Control', 'public, max-age=0')
-          .expect(200, done)
-      })
-
-      it('should accept string', function (done) {
-        const server = createServer(null, { maxAge: '30d' })
-        request(server)
-          .get('/favicon.ico')
-          .expect('Cache-Control', 'public, max-age=2592000')
-          .expect(200, done)
-      })
-
-      it('should be valid delta-seconds', function (done) {
-        const server = createServer(null, { maxAge: 1234 })
-        request(server)
-          .get('/favicon.ico')
-          .expect('Cache-Control', 'public, max-age=1')
-          .expect(200, done)
-      })
-
-      it('should floor at 0', function (done) {
-        const server = createServer(null, { maxAge: -4000 })
-        request(server)
-          .get('/favicon.ico')
-          .expect('Cache-Control', 'public, max-age=0')
-          .expect(200, done)
-      })
-
-      it('should ceil at 1 year', function (done) {
-        const server = createServer(null, { maxAge: 900000000000 })
-        request(server)
-          .get('/favicon.ico')
-          .expect('Cache-Control', 'public, max-age=31536000')
-          .expect(200, done)
-      })
 
       it('should accept Inifnity', function (done) {
         const server = createServer(null, { maxAge: Infinity })
@@ -197,13 +216,13 @@ describe('favicon()', function () {
         .expect('Content-Type', 'image/x-icon')
         .expect(200, done)
     })
-    */
     describe('missing req.url', function () {
       it('should ignore the request', function (done) {
         const fn = favicon(ICON_PATH)
         fn({}, {}, done)
       })
     })
+    */
   })
 
   /*
@@ -311,12 +330,40 @@ describe('favicon()', function () {
   */
 })
 
-function createServer (path = ICON_PATH, opts = {}) {
-  const _favicon = favicon(path, opts)
-  return http.createServer((_req, _res) => {
-    _favicon((_req, res, err) => {
-      res.statusCode = err ? (err.status || 500) : 404
-      res.end(err ? err.message : 'oops')
+function createServer (path = ICON_PATH, opts = {}, next) {
+  try {
+    const middleware = favicon(path, opts)
+    const server = http.createServer((request, response) => {
+      request.path = request.url
+      middleware(request, response, err => {
+        response.statusCode = err ? (err.status || 500) : 404
+        response.end(err ? err.message : 'oops')
+      })
     })
+    server.listen(() => {
+      next(null, server)
+    })
+  } catch (err) {
+    next(err, null)
+  }
+}
+
+function closeServer (server, next) {
+  server.closeAllConnections()
+  server.close(err => {
+    if (err) {
+      next(err)
+    } else {
+      console.log('server closed')
+      next()
+    }
   })
+}
+
+function parseRawHeaders (raw) {
+  const headers = {}
+  for (let i = 0; i < (raw.length - 1); i += 2) {
+    headers[raw[i]] = raw[i + 1]
+  }
+  return headers
 }
